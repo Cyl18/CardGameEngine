@@ -1,0 +1,3 @@
+[submodule "GammaLibrary"]
+	path = GammaLibrary
+	url = https://github.com/Cyl18/GammaLibrary.git
