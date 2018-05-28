@@ -5,19 +5,16 @@
   </PropertyGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="cd $(SolutionDir)&#xD;&#xA;cd GammaLibrary&#xD;&#xA;git submodule update&#xD;&#xA;cd .." />
+    <Exec Command="cd $(SolutionDir)&#xD;&#xA;git submodule update  --recursive --remote" />
   </Target>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.5.0-rc1" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\GammaLibrary\GammaLibrary\GammaLibrary.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Data\" />
   </ItemGroup>
 
 </Project>
