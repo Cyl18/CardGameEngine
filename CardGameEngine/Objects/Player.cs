@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using CardGameEngine.Data;
+﻿using CardGameEngine.Data;
 
 namespace CardGameEngine.Objects
 {

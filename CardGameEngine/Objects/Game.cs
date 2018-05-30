@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using CardGameEngine.Data;
-using CardGameEngine.Debug;
+using CardGameEngine.Debugs;
 using CardGameEngine.Events;
 using CardGameEngine.Games;
 
@@ -19,25 +18,25 @@ namespace CardGameEngine.Objects
         public GameIdentifier Identifier { get; } = GameIdentifier.CreateOne();
         public object InnerIdentifier => Identifier;
         public IReadOnlyDictionary<Identifier<Player>, Player> Players => PlayerDictionary;
-        private ConcurrentDictionary<Identifier<Player>, Player> PlayerDictionary { get; } = new ConcurrentDictionary<Identifier<Player>, Player>();
-
-        public event EventHandler<Player> PlayerAdded;
-        public event EventHandler<Identifier<Player>> PlayerRemoved;
+        protected ConcurrentDictionary<Identifier<Player>, Player> PlayerDictionary { get; } = new ConcurrentDictionary<Identifier<Player>, Player>();
+        protected EventManager EventManager { get; } = new EventManager();
+        public class PlayerAdded : Event<PlayerAdded, Player> { }
+        public class PlayerRemoved : Event<PlayerRemoved, Identifier<Player>> { }
         public void AddPlayer(Player player)
         {
             var identifier = player.GetIdentifier();
             if (PlayerDictionary.ContainsKey(identifier)) throw new PlayerAlreadyExistsException(identifier.GetPlayerName());
             PlayerDictionary[identifier] = player;
-            PlayerAdded?.Invoke(this, player);
+            EventManager.TriggerEvent<PlayerAdded>(this, player);
         }
 
         public void RemovePlayer(Identifier<Player> playerIdentifier)
         {
             if (!PlayerDictionary.ContainsKey(playerIdentifier)) throw new PlayerNotExistsException(playerIdentifier.GetPlayerName());
             if (!PlayerDictionary.TryRemove(playerIdentifier, out _)) throw new OperationFailedException("remove player"); //TODO i18n
-            PlayerRemoved?.Invoke(this, playerIdentifier);
+            EventManager.TriggerEvent<PlayerRemoved>(this, playerIdentifier);
         }
-
+        
     }
 
     public class OperationFailedException : CardGameException
@@ -61,35 +60,30 @@ namespace CardGameEngine.Objects
 
     public abstract partial class Game
     {
-        private ConcurrentDictionary<Identifier<Player>, Player> GlobalPlayersDictionary { get; } = new ConcurrentDictionary<Identifier<Player>, Player>();
-        public event EventHandler<Game> GameEnded;
+        private ConcurrentDictionary<Identifier<Game>, Game> GlobalGamesDictionary { get; } = new ConcurrentDictionary<Identifier<Game>, Game>();
+        public class GameEnded : Event<GameEnded, Game> { }
 
         private void InitialEvents()
         {
-            GameEnded += OnGameEnded;
-            PlayerAdded += OnPlayerAdded;
-            PlayerRemoved += OnPlayerRemoved;
+            // TODO use reflection
+            EventManager.RegisterAllInnerEvents<Game>();
+            EventManager.RegisterEventHandler(GameEnded.Identifier, OnGameEnded);
+            EventManager.RegisterEventHandler(PlayerAdded.Identifier, OnPlayerAdded);
+            EventManager.RegisterEventHandler(PlayerRemoved.Identifier, OnPlayerRemoved);
         }
 
         private void OnPlayerAdded(object sender, Player player)
         {
-            GlobalPlayersDictionary.TryAdd(player.GetIdentifier(), player)
-                .TraceWarningIfFalse($"Unable to add player {player} in the global players dictionary.");
+
         }
 
         private void OnPlayerRemoved(object sender, Identifier<Player> identifier)
         {
-            GlobalPlayersDictionary.TryRemove(identifier, out _)
-                .TraceWarningIfFalse($"Unable to remove player {identifier} in the global players dictionary");
-        }
 
+        }
         private void OnGameEnded(object sender, Game e)
         {
-            foreach (var identifier in e.Players.Select(kv => kv.Key))
-            {
-                GlobalPlayersDictionary.TryRemove(identifier, out _)
-                    .TraceWarningIfFalse($"Unable to remove player {identifier} in the global players dictionary.");
-            }
+            GlobalGamesDictionary.TryRemove(e.GetIdentifier(), out _).TraceWarningIfFalse($"Unable to remove game {this}");
         }
     }
 
@@ -106,13 +100,6 @@ namespace CardGameEngine.Objects
         {
             return new GameIdentifier(Guid.NewGuid());
         }
-    }
-
-    public interface IPlayerContainer
-    {
-        IReadOnlyDictionary<Identifier<Player>, Player> Players { get; }
-        void AddPlayer(Player player);
-        void RemovePlayer(Identifier<Player> playerIdentifier);
     }
 }
 
