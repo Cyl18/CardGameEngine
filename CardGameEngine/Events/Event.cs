@@ -9,15 +9,15 @@ namespace CardGameEngine.Events
 {
     public abstract class Event<TEvent, TEventArgs> where TEvent : Event<TEvent, TEventArgs>, new()
     {
-        private readonly List<EventInfo> Events = new List<EventInfo>();
+        private readonly List<EventInfo> _eventHandlers = new List<EventInfo>();
         public static readonly Event<TEvent, TEventArgs> Identifier;
         private bool _locked;
 
-        private class EventInfo
+        private struct EventInfo
         {
-            public EventHandler<TEventArgs> Handler;
-            public string StackTraceWhenRegistering;
-            public DateTime TimeWhenRegistering;
+            public readonly EventHandler<TEventArgs> Handler;
+            public readonly string StackTraceWhenRegistering;
+            public readonly DateTime TimeWhenRegistering;
 
             public EventInfo(EventHandler<TEventArgs> handler)
             {
@@ -37,13 +37,13 @@ namespace CardGameEngine.Events
         public void Register(EventHandler<TEventArgs> eventHandler)
         {
             if (_locked) throw new InvalidOperationException();
-            Events.Add(new EventInfo(eventHandler));
+            _eventHandlers.Add(new EventInfo(eventHandler));
         }
 
         public void Remove(EventHandler<TEventArgs> eventHandler)
         {
             if (_locked) throw new InvalidOperationException();
-            Events.RemoveAll(e => e.Handler == eventHandler);
+            _eventHandlers.RemoveAll(e => e.Handler == eventHandler);
         }
 
         public void Invoke(object invoker, TEventArgs args)
@@ -52,7 +52,7 @@ namespace CardGameEngine.Events
 
             Trace.TraceInformation($"Begin event handle in type {typeof(TEvent)}");
             Trace.Indent();
-            foreach (var handler in Events)
+            foreach (var handler in _eventHandlers)
             {
                 Benchmark.MeasureTime(() =>
                     handler.Handler.InvokeWhenException(invoker, args,
@@ -64,7 +64,7 @@ namespace CardGameEngine.Events
                         span => Trace.TraceInformation($"Event handler call finished in {span.Humanize()}"));
             }
             Trace.Unindent();
-            Trace.TraceInformation($"{Events.Count} event{(Events.Count > 1 ? "s" :string.Empty)} performed in type {typeof(TEvent)}.");
+            Trace.TraceInformation($"{_eventHandlers.Count} event{(_eventHandlers.Count > 1 ? "s" :string.Empty)} performed in type {typeof(TEvent)}.");
         }
     }
     

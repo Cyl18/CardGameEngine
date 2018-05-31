@@ -1,4 +1,6 @@
-﻿namespace CardGameEngine.Data
+﻿using System;
+
+namespace CardGameEngine.Data
 {
     public class Identifier<T> where T : IIdentifiable<T>
     {
@@ -12,14 +14,14 @@
         public static Identifier<T> Of(IIdentifiable<T> identifiable) => new Identifier<T>(identifiable);
     }
     
-    public interface IIdentifiable<T>
+    public interface IIdentifiable<T> where T : IIdentifiable<T>
     {
         object InnerIdentifier { get; }
     }
 
     public interface IIdentifierOf<T>
     {
-
+        T Identifier { get; }
     }
 
     public static class IdentifierExtensions

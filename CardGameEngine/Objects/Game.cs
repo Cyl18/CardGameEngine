@@ -20,6 +20,7 @@ namespace CardGameEngine.Objects
         public IReadOnlyDictionary<Identifier<Player>, Player> Players => PlayerDictionary;
         protected ConcurrentDictionary<Identifier<Player>, Player> PlayerDictionary { get; } = new ConcurrentDictionary<Identifier<Player>, Player>();
         protected EventManager EventManager { get; } = new EventManager();
+        public static Event<PlayerAdded, Player> PlayerAdded1;
         public class PlayerAdded : Event<PlayerAdded, Player> { }
         public class PlayerRemoved : Event<PlayerRemoved, Identifier<Player>> { }
         public void AddPlayer(Player player)
@@ -63,7 +64,7 @@ namespace CardGameEngine.Objects
         private ConcurrentDictionary<Identifier<Game>, Game> GlobalGamesDictionary { get; } = new ConcurrentDictionary<Identifier<Game>, Game>();
         public class GameEnded : Event<GameEnded, Game> { }
 
-        private void InitialEvents()
+        private void InitializeEvents()
         {
             // TODO use reflection
             EventManager.RegisterAllInnerEvents<Game>();
